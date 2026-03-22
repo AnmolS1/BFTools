@@ -2,6 +2,7 @@
   "name": "brainfuck-vscode",
   "displayName": "Brainfuck",
   "description": "Brainfuck language support for VSCode: syntax highlighting, formatting, linting, debugging, and JIT execution",
+  "icon": "images/pfp.png",
   "version": "0.1.0",
   "publisher": "Ponderance",
   "repository": {

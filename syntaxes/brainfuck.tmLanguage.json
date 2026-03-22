@@ -1,0 +1,23 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Brainfuck",
+  "scopeName": "source.brainfuck",
+  "patterns": [
+    {
+      "comment": "Line comment",
+      "name": "comment.line.double-slash.brainfuck",
+      "match": "//.*$"
+    },
+    {
+      "comment": "Block comment",
+      "name": "comment.block.brainfuck",
+      "begin": "/\\*",
+      "end": "\\*/"
+    },
+    {
+      "comment": "Brainfuck operators",
+      "name": "keyword.operator.brainfuck",
+      "match": "[+\\-<>\\[\\].,]"
+    }
+  ]
+}

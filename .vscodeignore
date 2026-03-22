@@ -1,0 +1,14 @@
+.github/
+crates/
+test-fixtures/
+src/
+tsconfig.json
+Cargo.toml
+Cargo.lock
+target/
+.cargo/
+.claude/
+tasks.md
+docs/
+*.rs
+**/*.rs

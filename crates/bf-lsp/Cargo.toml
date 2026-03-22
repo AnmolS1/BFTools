@@ -1,0 +1,20 @@
+[package]
+name = "bf-lsp"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "bf_lsp"
+path = "src/lib.rs"
+
+[[bin]]
+name = "bf-lsp"
+path = "src/main.rs"
+
+[dependencies]
+tower-lsp = "0.20"
+tokio = { version = "1", features = ["full"] }
+serde_json = "1"
+dashmap = "5"
+bf-formatter = { path = "../bf-formatter" }
+bf-core = { path = "../bf-core" }

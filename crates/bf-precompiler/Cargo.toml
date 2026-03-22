@@ -1,0 +1,23 @@
+[package]
+name = "bf-precompiler"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "bf_precompiler"
+path = "src/lib.rs"
+
+[[bin]]
+name = "bf-precompiler"
+path = "src/main.rs"
+
+[dependencies]
+bf-core = { path = "../bf-core" }
+cranelift-codegen = { version = "0.113", optional = true }
+cranelift-frontend = { version = "0.113", optional = true }
+cranelift-module = { version = "0.113", optional = true }
+cranelift-object = { version = "0.113", optional = true }
+target-lexicon = { version = "0.12", optional = true }
+
+[features]
+aot = ["cranelift-codegen", "cranelift-frontend", "cranelift-module", "cranelift-object", "target-lexicon"]

@@ -1,0 +1,148 @@
+{
+  "name": "brainfuck-vscode",
+  "displayName": "Brainfuck",
+  "description": "Brainfuck language support for VSCode: syntax highlighting, formatting, linting, debugging, and JIT execution",
+  "version": "0.1.0",
+  "publisher": "Ponderance",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AnmolS1/BFTools"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Formatters",
+    "Debuggers"
+  ],
+  "activationEvents": [
+    "onLanguage:brainfuck"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "brainfuck",
+        "aliases": [
+          "Brainfuck",
+          "brainfuck",
+          "bf"
+        ],
+        "extensions": [
+          ".bf"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "brainfuck",
+        "scopeName": "source.brainfuck",
+        "path": "./syntaxes/brainfuck.tmLanguage.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "brainfuck.run",
+        "title": "Run Brainfuck Program",
+        "category": "Brainfuck"
+      },
+      {
+        "command": "brainfuck.runJIT",
+        "title": "Run with JIT",
+        "category": "Brainfuck"
+      },
+      {
+        "command": "brainfuck.runAutoJIT",
+        "title": "Run with Auto JIT",
+        "category": "Brainfuck"
+      },
+      {
+        "command": "brainfuck.format",
+        "title": "Format Document",
+        "category": "Brainfuck"
+      },
+      {
+        "command": "brainfuck.precompile",
+        "title": "Precompile to Executable",
+        "category": "Brainfuck"
+      },
+      {
+        "command": "brainfuck.runTests",
+        "title": "Run Test File",
+        "category": "Brainfuck"
+      }
+    ],
+    "debuggers": [
+      {
+        "type": "brainfuck",
+        "label": "Brainfuck Debug",
+        "configurationAttributes": {
+          "launch": {
+            "required": ["program"],
+            "properties": {
+              "program": {
+                "type": "string",
+                "description": "Absolute path to the .bf file to debug",
+                "default": "${file}"
+              }
+            }
+          }
+        },
+        "initialConfigurations": [
+          {
+            "type": "brainfuck",
+            "request": "launch",
+            "name": "Debug Brainfuck",
+            "program": "${file}"
+          }
+        ]
+      }
+    ],
+    "configuration": {
+      "title": "Brainfuck",
+      "properties": {
+        "brainfuck.lspServerPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the bf-lsp binary. Leave empty to use target/debug/bf-lsp relative to the workspace."
+        },
+        "brainfuck.interpreterPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the bf-interpreter binary. Leave empty to use target/debug/bf-interpreter relative to the workspace."
+        },
+        "brainfuck.dapServerPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the bf-dap binary. Leave empty to use target/debug/bf-dap relative to the workspace."
+        },
+        "brainfuck.testRunnerPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the bf-testrunner binary. Leave empty to use target/debug/bf-testrunner relative to the workspace."
+        },
+        "brainfuck.precompilerPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the bf-precompiler binary. Leave empty to use target/debug/bf-precompiler relative to the workspace."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "vscode:prepublish": "npm run compile"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.3.0",
+    "@vscode/vsce": "^3.0.0"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.0"
+  }
+}

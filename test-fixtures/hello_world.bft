@@ -1,0 +1,4 @@
+[[test]]
+name = "Hello World"
+program = "hello_world.bf"
+expected_output = "Hello World!\n"

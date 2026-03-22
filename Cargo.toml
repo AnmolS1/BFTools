@@ -1,0 +1,11 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/bf-core",
+    "crates/bf-formatter",
+    "crates/bf-interpreter",
+    "crates/bf-lsp",
+    "crates/bf-dap",
+    "crates/bf-testrunner",
+    "crates/bf-precompiler",
+]

@@ -1,0 +1,16 @@
+[package]
+name = "bf-testrunner"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "bf_testrunner"
+path = "src/lib.rs"
+
+[[bin]]
+name = "bf-testrunner"
+path = "src/main.rs"
+
+[dependencies]
+bf-core = { path = "../bf-core" }
+bf-interpreter = { path = "../bf-interpreter" }

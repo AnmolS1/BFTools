@@ -1,0 +1,18 @@
+[package]
+name = "bf-dap"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "bf_dap"
+path = "src/lib.rs"
+
+[[bin]]
+name = "bf-dap"
+path = "src/main.rs"
+
+[dependencies]
+bf-core = { path = "../bf-core" }
+bf-interpreter = { path = "../bf-interpreter" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"

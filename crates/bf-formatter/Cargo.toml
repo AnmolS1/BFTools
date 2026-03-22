@@ -1,0 +1,15 @@
+[package]
+name = "bf-formatter"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "bf_formatter"
+path = "src/lib.rs"
+
+[[bin]]
+name = "bf-formatter"
+path = "src/main.rs"
+
+[dependencies]
+bf-core = { path = "../bf-core" }

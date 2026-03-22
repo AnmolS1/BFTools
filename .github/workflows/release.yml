@@ -73,6 +73,9 @@ jobs:
       - name: Install npm deps
         run: npm ci
 
+      - name: Set version from tag
+        run: npm version "${GITHUB_REF_NAME#v}" --no-git-tag-version
+
       - name: Compile TypeScript
         run: npm run compile
 
@@ -127,14 +130,11 @@ jobs:
       - name: Install npm deps
         run: npm ci
 
+      - name: Set version from tag
+        run: npm version "${GITHUB_REF_NAME#v}" --no-git-tag-version
+
       - name: Compile TypeScript
         run: npm run compile
-
-      - name: Download .vsix artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: vsix
-          path: vsix
 
       - name: Publish to Marketplace
         run: npx vsce publish --no-dependencies -p ${{ secrets.VSCE_PAT }}

@@ -18,7 +18,14 @@
     "Debuggers"
   ],
   "activationEvents": [
-    "onLanguage:brainfuck"
+    "onLanguage:brainfuck",
+    "onDebugResolve:brainfuck",
+    "onCommand:brainfuck.run",
+    "onCommand:brainfuck.runJIT",
+    "onCommand:brainfuck.runAutoJIT",
+    "onCommand:brainfuck.format",
+    "onCommand:brainfuck.precompile",
+    "onCommand:brainfuck.runTests"
   ],
   "main": "./out/extension.js",
   "contributes": {

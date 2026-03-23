@@ -17,12 +17,15 @@ jobs:
         include:
           - os: ubuntu-latest
             artifact_name: binaries-linux-x86_64
+            platform: linux-x86_64
             suffix: ""
           - os: macos-latest
             artifact_name: binaries-macos
+            platform: macos-arm64
             suffix: ""
           - os: windows-latest
             artifact_name: binaries-windows-x86_64
+            platform: windows-x86_64
             suffix: ".exe"
 
     steps:
@@ -45,16 +48,26 @@ jobs:
       - name: Build release binaries
         run: cargo build --workspace --release
 
+      - name: Rename binaries with platform suffix
+        shell: bash
+        run: |
+          cd target/release
+          for bin in bf-lsp bf-dap bf-interpreter bf-testrunner bf-precompiler; do
+            if [ -f "${bin}${{ matrix.suffix }}" ]; then
+              mv "${bin}${{ matrix.suffix }}" "${bin}-${{ matrix.platform }}${{ matrix.suffix }}"
+            fi
+          done
+
       - name: Upload binaries
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
           path: |
-            target/release/bf-lsp${{ matrix.suffix }}
-            target/release/bf-dap${{ matrix.suffix }}
-            target/release/bf-interpreter${{ matrix.suffix }}
-            target/release/bf-testrunner${{ matrix.suffix }}
-            target/release/bf-precompiler${{ matrix.suffix }}
+            target/release/bf-lsp-${{ matrix.platform }}${{ matrix.suffix }}
+            target/release/bf-dap-${{ matrix.platform }}${{ matrix.suffix }}
+            target/release/bf-interpreter-${{ matrix.platform }}${{ matrix.suffix }}
+            target/release/bf-testrunner-${{ matrix.platform }}${{ matrix.suffix }}
+            target/release/bf-precompiler-${{ matrix.platform }}${{ matrix.suffix }}
 
   package-extension:
     name: Package VS Code Extension
@@ -138,4 +151,3 @@ jobs:
 
       - name: Publish to Marketplace
         run: npx vsce publish -p ${{ secrets.VSCE_PAT }}
-

@@ -1,17 +1,13 @@
-import * as path from 'path';
 import * as vscode from 'vscode';
 import type { LanguageClient as LanguageClientType } from 'vscode-languageclient/node';
+import { resolveBinary } from './extension';
 
 let client: LanguageClientType | undefined;
 
-export function createLspClient(context: vscode.ExtensionContext): LanguageClientType {
+export function createLspClient(): LanguageClientType {
     const { LanguageClient, TransportKind } = require('vscode-languageclient/node');
 
-    const config = vscode.workspace.getConfiguration('brainfuck');
-    let serverPath = config.get<string>('lspServerPath', '');
-    if (!serverPath) {
-        serverPath = path.join(context.extensionPath, '..', 'target', 'debug', 'bf-lsp');
-    }
+    const serverPath = resolveBinary('lspServerPath', 'bf-lsp');
 
     const serverOptions = {
         run: { command: serverPath, transport: TransportKind.stdio },
@@ -30,7 +26,6 @@ export function createLspClient(context: vscode.ExtensionContext): LanguageClien
         clientOptions,
     );
 
-    context.subscriptions.push({ dispose: () => stopLspClient() });
     return client!;
 }
 
@@ -42,7 +37,11 @@ export async function startLspClient(): Promise<void> {
 
 export async function stopLspClient(): Promise<void> {
     if (client) {
-        await client.stop();
+        try {
+            await client.stop();
+        } catch {
+            // Client may be in startFailed state — safe to ignore
+        }
         client = undefined;
     }
 }

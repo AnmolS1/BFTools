@@ -1,20 +1,12 @@
-import * as path from 'path';
 import * as vscode from 'vscode';
+import { resolveBinary } from './extension';
 
 export class BrainfuckDebugAdapterFactory implements vscode.DebugAdapterDescriptorFactory {
-    constructor(private readonly context: vscode.ExtensionContext) {}
-
     createDebugAdapterDescriptor(
         _session: vscode.DebugSession,
         _executable: vscode.DebugAdapterExecutable | undefined
     ): vscode.ProviderResult<vscode.DebugAdapterDescriptor> {
-        const config = vscode.workspace.getConfiguration('brainfuck');
-        const configuredPath = config.get<string>('dapServerPath');
-
-        const dapPath = configuredPath && configuredPath.trim() !== ''
-            ? configuredPath
-            : path.join(this.context.extensionPath, '..', 'target', 'debug', 'bf-dap');
-
+        const dapPath = resolveBinary('dapServerPath', 'bf-dap');
         return new vscode.DebugAdapterExecutable(dapPath);
     }
 }

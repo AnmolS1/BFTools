@@ -132,22 +132,19 @@ jobs:
     needs: package-extension
 
     steps:
-      - uses: actions/checkout@v4
-
       - name: Install Node
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "npm"
 
-      - name: Install npm deps
-        run: npm ci
+      - name: Download .vsix artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: vsix
+          path: vsix
 
-      - name: Set version from tag
-        run: npm version "${GITHUB_REF_NAME#v}" --no-git-tag-version
-
-      - name: Compile TypeScript
-        run: npm run compile
+      - name: Install vsce
+        run: npm install -g @vscode/vsce
 
       - name: Publish to Marketplace
-        run: npx vsce publish -p ${{ secrets.VSCE_PAT }}
+        run: vsce publish --packagePath vsix/*.vsix -p ${{ secrets.VSCE_PAT }}

@@ -1,10 +1,8 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
+import { resolveBinary } from './extension';
 
-export function runBrainfuck(
-    context: vscode.ExtensionContext,
-    flags: string[] = [],
-): void {
+export function runBrainfuck(flags: string[] = []): void {
     const editor = vscode.window.activeTextEditor;
     if (!editor || editor.document.languageId !== 'brainfuck') {
         vscode.window.showErrorMessage('No Brainfuck file is open');
@@ -12,11 +10,7 @@ export function runBrainfuck(
     }
 
     const filePath = editor.document.uri.fsPath;
-    const config = vscode.workspace.getConfiguration('brainfuck');
-    let interpreterPath = config.get<string>('interpreterPath', '');
-    if (!interpreterPath) {
-        interpreterPath = path.join(context.extensionPath, '..', 'target', 'debug', 'bf-interpreter');
-    }
+    const interpreterPath = resolveBinary('interpreterPath', 'bf-interpreter');
 
     const terminal = vscode.window.createTerminal({
         name: `Brainfuck: ${path.basename(filePath)}`,

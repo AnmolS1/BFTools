@@ -6,6 +6,7 @@ import { BrainfuckDebugAdapterFactory, BrainfuckConfigurationProvider } from './
 import { runTests } from './testrunner';
 
 let outputChannel: vscode.OutputChannel;
+let extensionPath: string = '';
 
 /**
  * Resolve the path to a Brainfuck tool binary.
@@ -14,7 +15,8 @@ let outputChannel: vscode.OutputChannel;
  *  1. User-configured path in settings (e.g. brainfuck.lspServerPath)
  *  2. <workspace-root>/target/release/<binaryName>
  *  3. <workspace-root>/target/debug/<binaryName>
- *  4. Bare binary name (relies on PATH)
+ *  4. <extensionPath>/bin/<binaryName> (bundled in VSIX)
+ *  5. Bare binary name (relies on PATH)
  */
 export function resolveBinary(
     settingKey: string,
@@ -26,13 +28,23 @@ export function resolveBinary(
         return configured.trim();
     }
 
+    const fs: typeof import('fs') = require('fs');
+
+    // Check workspace target directories (for development)
     const wsRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
     if (wsRoot) {
-        const fs: typeof import('fs') = require('fs');
         const release = path.join(wsRoot, 'target', 'release', binaryName);
         if (fs.existsSync(release)) { return release; }
         const debug = path.join(wsRoot, 'target', 'debug', binaryName);
         if (fs.existsSync(debug)) { return debug; }
+    }
+
+    // Check bundled binaries shipped inside the VSIX
+    if (extensionPath) {
+        const bundled = path.join(extensionPath, 'bin', binaryName);
+        if (fs.existsSync(bundled)) { return bundled; }
+        const bundledExe = bundled + '.exe';
+        if (fs.existsSync(bundledExe)) { return bundledExe; }
     }
 
     // Fall back to bare name and rely on PATH
@@ -40,6 +52,7 @@ export function resolveBinary(
 }
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
+    extensionPath = context.extensionPath;
     outputChannel = vscode.window.createOutputChannel('Brainfuck');
     outputChannel.appendLine('Brainfuck extension activated');
 

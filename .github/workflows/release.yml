@@ -17,14 +17,17 @@ jobs:
         include:
           - os: ubuntu-latest
             artifact_name: binaries-linux-x86_64
+            bundled_artifact: bundled-binaries-linux-x86_64
             platform: linux-x86_64
             suffix: ""
           - os: macos-latest
             artifact_name: binaries-macos
+            bundled_artifact: bundled-binaries-macos-arm64
             platform: macos-arm64
             suffix: ""
           - os: windows-latest
             artifact_name: binaries-windows-x86_64
+            bundled_artifact: bundled-binaries-windows-x86_64
             platform: windows-x86_64
             suffix: ".exe"
 
@@ -54,11 +57,11 @@ jobs:
           cd target/release
           for bin in bf-lsp bf-dap bf-interpreter bf-testrunner bf-precompiler; do
             if [ -f "${bin}${{ matrix.suffix }}" ]; then
-              mv "${bin}${{ matrix.suffix }}" "${bin}-${{ matrix.platform }}${{ matrix.suffix }}"
+              cp "${bin}${{ matrix.suffix }}" "${bin}-${{ matrix.platform }}${{ matrix.suffix }}"
             fi
           done
 
-      - name: Upload binaries
+      - name: Upload platform-suffixed binaries (for GitHub Release)
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
@@ -69,10 +72,33 @@ jobs:
             target/release/bf-testrunner-${{ matrix.platform }}${{ matrix.suffix }}
             target/release/bf-precompiler-${{ matrix.platform }}${{ matrix.suffix }}
 
+      - name: Upload original binaries (for VSIX bundling)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.bundled_artifact }}
+          path: |
+            target/release/bf-lsp${{ matrix.suffix }}
+            target/release/bf-dap${{ matrix.suffix }}
+            target/release/bf-interpreter${{ matrix.suffix }}
+            target/release/bf-testrunner${{ matrix.suffix }}
+            target/release/bf-precompiler${{ matrix.suffix }}
+
   package-extension:
-    name: Package VS Code Extension
+    name: Package VSIX (${{ matrix.vscode_target }})
     runs-on: ubuntu-latest
     needs: build
+    strategy:
+      matrix:
+        include:
+          - vscode_target: linux-x64
+            binary_artifact: bundled-binaries-linux-x86_64
+            suffix: ""
+          - vscode_target: darwin-arm64
+            binary_artifact: bundled-binaries-macos-arm64
+            suffix: ""
+          - vscode_target: win32-x64
+            binary_artifact: bundled-binaries-windows-x86_64
+            suffix: ".exe"
 
     steps:
       - uses: actions/checkout@v4
@@ -92,13 +118,23 @@ jobs:
       - name: Compile TypeScript
         run: npm run compile
 
-      - name: Package extension
-        run: npx vsce package
+      - name: Download binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.binary_artifact }}
+          path: bin
 
-      - name: Upload .vsix
+      - name: Make binaries executable
+        if: matrix.suffix == ''
+        run: chmod +x bin/*
+
+      - name: Package platform-specific VSIX
+        run: npx vsce package --target ${{ matrix.vscode_target }}
+
+      - name: Upload VSIX
         uses: actions/upload-artifact@v4
         with:
-          name: vsix
+          name: vsix-${{ matrix.vscode_target }}
           path: "*.vsix"
 
   create-release:
@@ -123,7 +159,9 @@ jobs:
             artifacts/binaries-linux-x86_64/*
             artifacts/binaries-macos/*
             artifacts/binaries-windows-x86_64/*
-            artifacts/vsix/*.vsix
+            artifacts/vsix-linux-x64/*.vsix
+            artifacts/vsix-darwin-arm64/*.vsix
+            artifacts/vsix-win32-x64/*.vsix
           generate_release_notes: true
 
   publish-marketplace:
@@ -137,11 +175,12 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Download .vsix artifact
+      - name: Download all VSIX artifacts
         uses: actions/download-artifact@v4
         with:
-          name: vsix
+          pattern: vsix-*
           path: vsix
+          merge-multiple: true
 
       - name: Install vsce
         run: npm install -g @vscode/vsce

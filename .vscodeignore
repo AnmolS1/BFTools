@@ -12,3 +12,4 @@ tasks.md
 docs/
 *.rs
 **/*.rs
+!bin/

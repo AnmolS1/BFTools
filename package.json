@@ -114,27 +114,27 @@
         "brainfuck.lspServerPath": {
           "type": "string",
           "default": "",
-          "description": "Path to the bf-lsp binary. Leave empty to use target/debug/bf-lsp relative to the workspace."
+          "description": "Path to the bf-lsp binary. Leave empty to use the bundled binary (installed automatically with the extension)."
         },
         "brainfuck.interpreterPath": {
           "type": "string",
           "default": "",
-          "description": "Path to the bf-interpreter binary. Leave empty to use target/debug/bf-interpreter relative to the workspace."
+          "description": "Path to the bf-interpreter binary. Leave empty to use the bundled binary (installed automatically with the extension)."
         },
         "brainfuck.dapServerPath": {
           "type": "string",
           "default": "",
-          "description": "Path to the bf-dap binary. Leave empty to use target/debug/bf-dap relative to the workspace."
+          "description": "Path to the bf-dap binary. Leave empty to use the bundled binary (installed automatically with the extension)."
         },
         "brainfuck.testRunnerPath": {
           "type": "string",
           "default": "",
-          "description": "Path to the bf-testrunner binary. Leave empty to use target/debug/bf-testrunner relative to the workspace."
+          "description": "Path to the bf-testrunner binary. Leave empty to use the bundled binary (installed automatically with the extension)."
         },
         "brainfuck.precompilerPath": {
           "type": "string",
           "default": "",
-          "description": "Path to the bf-precompiler binary. Leave empty to use target/debug/bf-precompiler relative to the workspace."
+          "description": "Path to the bf-precompiler binary. Leave empty to use the bundled binary (installed automatically with the extension)."
         }
       }
     }

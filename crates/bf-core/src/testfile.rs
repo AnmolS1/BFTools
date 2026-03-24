@@ -1,6 +1,17 @@
 use serde::Deserialize;
 use std::path::{Path, PathBuf};
 
+/// How a string value in a `.bft` field is interpreted as bytes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum DataFormat {
+    /// Raw text: the string's UTF-8 bytes are used directly (default).
+    #[default]
+    Text,
+    /// Space- or comma-separated decimal integers in 0–255, each becoming one byte.
+    Integers,
+}
+
 #[derive(Debug, Deserialize)]
 struct RawTestFile {
     test: Vec<RawTestCase>,
@@ -12,6 +23,8 @@ struct RawTestCase {
     program: String,
     input: Option<String>,
     expected_output: String,
+    input_format: Option<DataFormat>,
+    output_format: Option<DataFormat>,
 }
 
 #[derive(Debug)]
@@ -26,8 +39,25 @@ pub struct TestCase {
     pub program: PathBuf,
     /// Bytes fed to the program's stdin.
     pub input: Vec<u8>,
-    /// Expected stdout output (trailing newline stripped).
+    /// Expected stdout output (trailing newline stripped for Text format).
     pub expected_output: Vec<u8>,
+    /// How `expected_output` should be displayed in test results.
+    pub output_format: DataFormat,
+}
+
+/// Parse a space- or comma-separated list of decimal integers into bytes.
+fn parse_integer_bytes(s: &str, field: &str, test_name: &str) -> Result<Vec<u8>, String> {
+    s.split(|c: char| c == ',' || c.is_ascii_whitespace())
+        .filter(|t| !t.is_empty())
+        .map(|t| {
+            t.parse::<u8>().map_err(|e| {
+                format!(
+                    "Test '{}': invalid byte value '{}' in {}: {}",
+                    test_name, t, field, e
+                )
+            })
+        })
+        .collect()
 }
 
 /// Parse a `.bft` test file at `path`.
@@ -55,15 +85,31 @@ pub fn parse_test_file(path: &Path) -> Result<TestFile, String> {
             ));
         }
 
-        let input = raw_case
-            .input
-            .map(|s| s.into_bytes())
-            .unwrap_or_default();
+        let in_fmt = raw_case.input_format.unwrap_or_default();
+        let out_fmt = raw_case.output_format.unwrap_or_default();
 
-        // Strip a single trailing newline from expected_output before storage.
-        let mut expected = raw_case.expected_output.into_bytes();
-        if expected.last() == Some(&b'\n') {
-            expected.pop();
+        let input = match raw_case.input {
+            Some(s) => match in_fmt {
+                DataFormat::Text => s.into_bytes(),
+                DataFormat::Integers => {
+                    parse_integer_bytes(&s, "input", &raw_case.name)?
+                }
+            },
+            None => Vec::new(),
+        };
+
+        let mut expected = match out_fmt {
+            DataFormat::Text => raw_case.expected_output.into_bytes(),
+            DataFormat::Integers => {
+                parse_integer_bytes(&raw_case.expected_output, "expected_output", &raw_case.name)?
+            }
+        };
+
+        // Strip a single trailing newline only for text format.
+        if out_fmt == DataFormat::Text {
+            if expected.last() == Some(&b'\n') {
+                expected.pop();
+            }
         }
 
         tests.push(TestCase {
@@ -71,6 +117,7 @@ pub fn parse_test_file(path: &Path) -> Result<TestFile, String> {
             program,
             input,
             expected_output: expected,
+            output_format: out_fmt,
         });
     }
 
@@ -152,5 +199,89 @@ mod tests {
         );
         let tf = parse_test_file(&bft_path).unwrap();
         assert_eq!(tf.tests[0].input, vec![5u8]);
+    }
+
+    #[test]
+    fn integer_output_format() {
+        let dir = tmp_dir();
+        write_file(&dir, "prog.bf", ".");
+        let bft_path = write_file(
+            &dir,
+            "tests.bft",
+            "[[test]]\nname = \"IntOut\"\nprogram = \"prog.bf\"\nexpected_output = \"72 101 108\"\noutput_format = \"integers\"\n",
+        );
+        let tf = parse_test_file(&bft_path).unwrap();
+        assert_eq!(tf.tests[0].expected_output, vec![72u8, 101, 108]);
+        assert_eq!(tf.tests[0].output_format, DataFormat::Integers);
+    }
+
+    #[test]
+    fn integer_input_format() {
+        let dir = tmp_dir();
+        write_file(&dir, "prog.bf", ".");
+        let bft_path = write_file(
+            &dir,
+            "tests.bft",
+            "[[test]]\nname = \"IntIn\"\nprogram = \"prog.bf\"\ninput = \"5, 10\"\ninput_format = \"integers\"\nexpected_output = \"x\"\n",
+        );
+        let tf = parse_test_file(&bft_path).unwrap();
+        assert_eq!(tf.tests[0].input, vec![5u8, 10]);
+    }
+
+    #[test]
+    fn integer_format_no_newline_strip() {
+        // Trailing-newline stripping must NOT apply to integer format.
+        // "10" means byte 10 (newline), NOT "10\n" with the newline removed.
+        let dir = tmp_dir();
+        write_file(&dir, "prog.bf", ".");
+        let bft_path = write_file(
+            &dir,
+            "tests.bft",
+            "[[test]]\nname = \"NoStrip\"\nprogram = \"prog.bf\"\nexpected_output = \"10\"\noutput_format = \"integers\"\n",
+        );
+        let tf = parse_test_file(&bft_path).unwrap();
+        assert_eq!(tf.tests[0].expected_output, vec![10u8]);
+    }
+
+    #[test]
+    fn invalid_integer_value_is_error() {
+        let dir = tmp_dir();
+        write_file(&dir, "prog.bf", ".");
+        let bft_path = write_file(
+            &dir,
+            "tests.bft",
+            "[[test]]\nname = \"Bad\"\nprogram = \"prog.bf\"\nexpected_output = \"256\"\noutput_format = \"integers\"\n",
+        );
+        let result = parse_test_file(&bft_path);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("256"));
+    }
+
+    #[test]
+    fn default_format_is_text() {
+        let dir = tmp_dir();
+        write_file(&dir, "prog.bf", ".");
+        let bft_path = write_file(
+            &dir,
+            "tests.bft",
+            "[[test]]\nname = \"Default\"\nprogram = \"prog.bf\"\nexpected_output = \"hello\"\n",
+        );
+        let tf = parse_test_file(&bft_path).unwrap();
+        assert_eq!(tf.tests[0].output_format, DataFormat::Text);
+        assert_eq!(tf.tests[0].expected_output, b"hello");
+    }
+
+    #[test]
+    fn integer_single_value() {
+        // The user's exact use case: expected_output = "7" with output_format = "integers"
+        let dir = tmp_dir();
+        write_file(&dir, "prog.bf", ".");
+        let bft_path = write_file(
+            &dir,
+            "tests.bft",
+            "[[test]]\nname = \"SingleInt\"\nprogram = \"prog.bf\"\nexpected_output = \"7\"\noutput_format = \"integers\"\n",
+        );
+        let tf = parse_test_file(&bft_path).unwrap();
+        assert_eq!(tf.tests[0].expected_output, vec![7u8]); // 0x07, NOT b'7' (0x37)
     }
 }

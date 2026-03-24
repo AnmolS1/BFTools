@@ -1,4 +1,4 @@
-use bf_core::testfile::TestCase;
+use bf_core::testfile::{DataFormat, TestCase};
 use bf_core::lexer::tokenize;
 use bf_core::parser::parse;
 use bf_interpreter::Interpreter;
@@ -18,6 +18,7 @@ pub struct TestResult {
     pub expected: Vec<u8>,
     pub actual: Vec<u8>,
     pub first_diff: Option<DiffInfo>,
+    pub output_format: DataFormat,
 }
 
 /// Run a single test case and return its result.
@@ -42,6 +43,7 @@ pub fn run_test(case: &TestCase) -> TestResult {
                     expected_byte: case.expected_output.first().copied(),
                     actual_byte: None,
                 }),
+                output_format: case.output_format,
             };
         }
     };
@@ -61,6 +63,7 @@ pub fn run_test(case: &TestCase) -> TestResult {
                     expected_byte: case.expected_output.first().copied(),
                     actual_byte: None,
                 }),
+                output_format: case.output_format,
             };
         }
     };
@@ -70,10 +73,12 @@ pub fn run_test(case: &TestCase) -> TestResult {
     let mut interp = Interpreter::new(&program);
     let _ = interp.run(&mut input, &mut output_buf);
 
-    // Strip trailing newline from actual output before comparison.
+    // Strip trailing newline from actual output only for text format.
     let mut actual = output_buf;
-    if actual.last() == Some(&b'\n') {
-        actual.pop();
+    if case.output_format == DataFormat::Text {
+        if actual.last() == Some(&b'\n') {
+            actual.pop();
+        }
     }
 
     let expected = &case.expected_output;
@@ -89,6 +94,7 @@ pub fn run_test(case: &TestCase) -> TestResult {
         expected: expected.clone(),
         actual,
         first_diff,
+        output_format: case.output_format,
     }
 }
 
@@ -124,6 +130,17 @@ fn find_first_diff(expected: &[u8], actual: &[u8]) -> Option<DiffInfo> {
     None
 }
 
+fn format_bytes(bytes: &[u8], fmt: DataFormat) -> String {
+    match fmt {
+        DataFormat::Text => String::from_utf8_lossy(bytes).into_owned(),
+        DataFormat::Integers => bytes
+            .iter()
+            .map(|b| b.to_string())
+            .collect::<Vec<_>>()
+            .join(" "),
+    }
+}
+
 /// Format a test result as a human-readable string (PASS or FAIL with diff).
 pub fn format_result(result: &TestResult) -> String {
     if result.passed {
@@ -132,11 +149,11 @@ pub fn format_result(result: &TestResult) -> String {
         let mut out = format!("FAIL  {:<25}  ({})\n", result.name, result.program);
         out += &format!(
             "      Expected : {}\n",
-            String::from_utf8_lossy(&result.expected)
+            format_bytes(&result.expected, result.output_format)
         );
         out += &format!(
             "      Actual   : {}\n",
-            String::from_utf8_lossy(&result.actual)
+            format_bytes(&result.actual, result.output_format)
         );
         if let Some(diff) = &result.first_diff {
             match (diff.expected_byte, diff.actual_byte) {
@@ -180,7 +197,7 @@ fn byte_repr(b: u8) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bf_core::testfile::TestCase;
+    use bf_core::testfile::{DataFormat, TestCase};
     use std::path::PathBuf;
 
     fn fixture_path(name: &str) -> PathBuf {
@@ -198,6 +215,7 @@ mod tests {
             program: fixture_path("hello_world.bf"),
             input: vec![],
             expected_output: b"Hello World!".to_vec(),
+            output_format: DataFormat::Text,
         };
         let result = run_test(&case);
         assert!(result.passed, "expected pass but got: {}", format_result(&result));
@@ -210,6 +228,7 @@ mod tests {
             program: fixture_path("hello_world.bf"),
             input: vec![],
             expected_output: b"Goodbye World!".to_vec(),
+            output_format: DataFormat::Text,
         };
         let result = run_test(&case);
         assert!(!result.passed);
@@ -225,11 +244,29 @@ mod tests {
             program: fixture_path("hello_world.bf"),
             input: vec![],
             expected_output: b"Hello World?".to_vec(), // last char differs
+            output_format: DataFormat::Text,
         };
         let result = run_test(&case);
         assert!(!result.passed);
         let text = format_result(&result);
         assert!(text.contains("FAIL"));
         assert!(text.contains("First diff at byte"));
+    }
+
+    #[test]
+    fn integer_format_display() {
+        // When output_format is Integers, format_result shows space-separated integers
+        let case = TestCase {
+            name: "IntDisplay".to_string(),
+            program: fixture_path("hello_world.bf"),
+            input: vec![],
+            expected_output: vec![7u8],
+            output_format: DataFormat::Integers,
+        };
+        let result = run_test(&case);
+        assert!(!result.passed);
+        let text = format_result(&result);
+        // Expected shows "7" (the integer), not a garbled character
+        assert!(text.contains("Expected : 7"));
     }
 }

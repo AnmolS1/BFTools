@@ -32,11 +32,44 @@ expected_output = "\u0005"
 | `name` | string | Yes | Human-readable test name, shown in output |
 | `program` | string | Yes | Path to `.bf` file, relative to the `.bft` file |
 | `input` | string | No | Bytes fed to `,` (read) instructions. Default: `""` |
-| `expected_output` | string | Yes | Expected stdout. A trailing `\n` is stripped before comparison |
+| `input_format` | string | No | How `input` is interpreted: `"text"` (default) or `"integers"` |
+| `expected_output` | string | Yes | Expected stdout. A trailing `\n` is stripped before comparison (text format only) |
+| `output_format` | string | No | How `expected_output` is interpreted: `"text"` (default) or `"integers"` |
 
 ### String Escapes
 
 TOML string escapes are supported: `\n`, `\t`, `\\`, `\"`, `\uXXXX` (4-digit hex, no braces). The `\x` hex escape is **not** supported by TOML — use `\uXXXX` with leading zeros instead (e.g., `\u0005` for byte value 5).
+
+### Integer Format
+
+When `input_format` or `output_format` is `"integers"`, the string value is parsed as space- or comma-separated decimal integers (0–255), each becoming one byte. This is useful when a BF program outputs raw numeric byte values rather than printable ASCII characters.
+
+```toml
+[[test]]
+name = "Count sheep"
+program = "./counting_sheep.bf"
+input = "fttftffffttftfft"
+expected_output = "7"
+output_format = "integers"
+# expected_output "7" means byte 0x07, not ASCII '7' (0x37)
+
+[[test]]
+name = "Multiple bytes"
+program = "./multi_output.bf"
+expected_output = "72 101 108 108 111"
+output_format = "integers"
+# Expects bytes [72, 101, 108, 108, 111] (H e l l o)
+
+[[test]]
+name = "Integer input"
+program = "./echo.bf"
+input = "65, 66, 67"
+input_format = "integers"
+expected_output = "ABC"
+# Feeds bytes [65, 66, 67] as stdin (A B C)
+```
+
+**Note:** Trailing-newline stripping does not apply to integer format — `"10"` means byte 10 (the newline character), not an empty result.
 
 ### Comparison
 

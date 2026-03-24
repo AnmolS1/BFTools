@@ -1,4 +1,4 @@
-use bf_core::testfile::{parse_test_file, TestCase};
+use bf_core::testfile::{DataFormat, parse_test_file, TestCase};
 use bf_testrunner::runner::{format_result, run_test};
 use std::path::PathBuf;
 
@@ -35,6 +35,7 @@ fn pass_format_contains_pass_keyword() {
         program: fixture_path("hello_world.bf"),
         input: vec![],
         expected_output: b"Hello World!".to_vec(),
+        output_format: DataFormat::Text,
     };
     let result = run_test(&case);
     assert!(result.passed);
@@ -49,6 +50,7 @@ fn fail_format_contains_fail_and_diff_info() {
         program: fixture_path("hello_world.bf"),
         input: vec![],
         expected_output: b"Goodbye World!".to_vec(),
+        output_format: DataFormat::Text,
     };
     let result = run_test(&case);
     assert!(!result.passed);
@@ -75,6 +77,7 @@ fn fail_reports_first_diff_byte_index() {
         program: fixture_path("hello_world.bf"),
         input: vec![],
         expected_output: expected_out,
+        output_format: DataFormat::Text,
     };
     let result = run_test(&case);
     assert!(!result.passed);
@@ -89,6 +92,7 @@ fn missing_program_file_is_fail() {
         program: fixture_path("does_not_exist.bf"),
         input: vec![],
         expected_output: b"anything".to_vec(),
+        output_format: DataFormat::Text,
     };
     let result = run_test(&case);
     assert!(!result.passed, "missing program should fail");
